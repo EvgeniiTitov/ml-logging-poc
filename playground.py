@@ -1,36 +1,82 @@
-import logging
+import sys
+import threading
+from queue import Queue
+import time
 
-from ml_logging import GCSBackend
-from ml_logging.messages import *
+import comet_ml
 
 
+class Streamer(threading.Thread):
 
-logging.basicConfig(level=logging.INFO)
+    def __init__(self, stream: Queue, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._steam_queue = stream
+        self.file = open("text.txt", "w")
+
+    def run(self) -> None:
+        while True:
+            payload = self._steam_queue.get()
+            if "STOP" in payload:
+                break
+
+            self.file.write(payload)
+            self.file.flush()
+        self.file.close()
+
+
+class Tee:
+    BATCH_SIZE = 10
+
+    def __init__(self, stream_queue: Queue):
+        self.stream = stream_queue
+        self.batch = []
+        self.stdout = sys.stdout
+        sys.stdout = self
+
+    def _unload_batch(self):
+        self.stream.put(" ".join([str(e) for e in self.batch]))
+
+    def write(self, data):
+        if len(self.batch) < Tee.BATCH_SIZE:
+            self.batch.append(data)
+        else:
+            self._unload_batch()
+            self.batch = [data]
+        self.stdout.write(data)
+
+    def flush(self):
+        self.stdout.flush()
+
+    # def close(self):
+    #     sys.stdout = self.stdout
+    #     if len(self.batch):
+    #         self._unload_batch()
+
+    def __del__(self):
+        sys.stdout = self.stdout
+        if len(self.batch):
+            self._unload_batch()
+
+
+def train_model():
+    print("Started to train the model")
+    for i in range(10):
+        print("Epoch:", i)
+    print("Model trained!")
 
 
 def main():
-    # backend = GCSBackend(run_folder_name="run_789")
-    # # backend.upload_asset("/Users/1213669/Coding/WooliesX/Chapter/ml-logging-poc/requirements.txt",
-    # #                      "new_name2.txt")
-    # backend.upload_image("/Users/1213669/Downloads/20211115_132529.jpg", "ugly_me")
-    # # backend.upload_hyper_parameter("Learning rate", 0.005)
-    # # backend.upload_hyper_parameter("Batch size", 64)
-    # # backend.upload_hyper_parameter("Epochs", 1000)
-    # #
-    # # assets_list = backend.list_assets()
-    # # print("ASSET LIST:", assets_list)
-    # #
-    # # images_list = backend.list_images()
-    # # print("IMAGE LIST:", images_list)
-    #
-    # backend.download_asset("new_name.txt", "/Users/1213669/Downloads/KEK2.txt")
-    # backend.download_image("ugly_me", "/Users/1213669/Downloads")
-    # print("\nDone")
-    get = GetMessage()
-    get.set_text("Some text")
-    get.set_kernel("KEK kernel")
+    stream_queue = Queue(100)
+    streamer = Streamer(stream_queue)
+    streamer.start()
 
-    print(get)
+    t = Tee(stream_queue)
+    train_model()
+
+    stream_queue.put("STOP")
+    streamer.join()
+    print("Done")
+
 
 if __name__ == '__main__':
     main()

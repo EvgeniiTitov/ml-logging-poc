@@ -13,6 +13,10 @@ from google.cloud import storage
 LOGGER = logging.getLogger(__name__)
 
 
+# TODO: Retries are important
+# TODO: Should backend thing sit in a separate thread?
+
+
 class GCSBackend:
     ROOT_BUCKET = "ml-logging-poc-etitov"
 
@@ -24,7 +28,7 @@ class GCSBackend:
         self._run_folder_name = run_folder_name
         folder_exists = self._does_run_level_folder_exist(run_folder_name)
         if folder_exists:
-            LOGGER.info("Folder exists -> running experiment")
+            LOGGER.info("Folder exists -> connecting to running experiment")
         else:
             LOGGER.info("Folder doest exist -> new experiment")
 
@@ -64,6 +68,15 @@ class GCSBackend:
         )
         self._upload_from_string(destination_name, f"{key} {str(value)}")
         LOGGER.info("KV uploaded")
+
+    def upload_text(self, text: str) -> None:
+        destination_name = os.path.join(
+            self._run_folder_name,
+            "text",
+            f"{uuid.uuid4()}.txt"
+        )
+        self._upload_from_string(destination_name, text)
+        LOGGER.info(f"Text uploaded")
 
     def list_assets(self) -> t.List[str]:
         blobs = self._list_blobs(os.path.join(self._run_folder_name, "assets"))

@@ -4,60 +4,58 @@ Different types of messages could be used as the streamer and the underlying
 connection implementation might upload different messages in different ways.
 Uploading a text and 500 Mb model weights is different
 """
+import typing as t
+
+
 class BaseMessage:
+    pass
 
-    def __init__(self):
-        self._text = None
-        self._image = None
-        self._asset = None
-        self._kernel = None
-        self._environment = None
 
-    def set_text(self, text: str) -> None:
-        self._text = text
+class CloseMessage(BaseMessage):
+    """
+    Message used to signal a worker to stop
+    """
+    pass
 
-    def set_image(self, image: str) -> None:
-        self._image = image
 
-    def set_asset(self, asset: str) -> None:
-        self._asset = asset
+class BaseLogMessage(BaseMessage):
+    """
+    Message used to signal a worker to do some task
+    """
+    def __init__(self, item: t.Any) -> None:
+        self._item = item
+        self._name = self.__class__.__name__
 
-    def set_kernel(self, info: str) -> None:
-        self._kernel = info
+    def __repr__(self):
+        return f"{self._name} - {self._item}"
 
-    def set_environment(self, environment: str) -> None:
-        self._environment = environment
+    @property
+    def item(self) -> t.Any:
+        return self._item
 
     def to_dict(self) -> dict:
         return self.__dict__
 
 
-class CloseMessage(BaseMessage):
+class LogHyperParamMessage(BaseLogMessage):
+
+    def __init__(self, key: str, value: t.Any):
+        self.key = key
+        self.value = value
+        super().__init__(f"{key} {value}")
+
+
+class LogImageMessage(BaseLogMessage):
     pass
 
 
-class PostMessage(BaseMessage):
-
-    def __init__(self) -> None:
-        super().__init__()
-
-    def __repr__(self):
-        return f"PostMessage: {self.to_dict()}"
+class LogAssetMessage(BaseLogMessage):
+    pass
 
 
-class GetMessage(BaseMessage):
-
-    def __init__(self):
-        super(GetMessage, self).__init__()
-
-    def __repr__(self):
-        return f"GetMessage: {self.to_dict()}"
+class LogTextMessage(BaseLogMessage):
+    pass
 
 
-class ListMessage(BaseMessage):
-
-    def __init__(self):
-        super().__init__()
-
-    def __repr__(self):
-        return f"ListMessage: {self.to_dict()}"
+class LogWhateverMessage(BaseLogMessage):
+    pass
