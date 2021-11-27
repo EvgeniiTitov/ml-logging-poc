@@ -12,11 +12,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 class BaseRun:
-
-    def __init__(
-            self,
-            auto_logging: bool
-    ) -> None:
+    def __init__(self, auto_logging: bool) -> None:
         self._run_id = self._generate_run_id()
         self._streamer: t.Optional[Streamer] = None
         self._start()
@@ -53,8 +49,12 @@ class BaseRun:
         self._log_config()
         LOGGER.info("General information logged")
 
+    def complete_experiment(self) -> None:
+        self._end()
+        LOGGER.info("Close message sent to the streamer")
+
     def _send_message_to_streamer(
-            self, message: messaging.BaseLogMessage
+        self, message: messaging.BaseLogMessage
     ) -> None:
         self._streamer.enqueue_message(message)
         LOGGER.debug(f"Message {message} send to the Streamer")
@@ -83,6 +83,6 @@ class BaseRun:
 
     def _end(self) -> None:
         # TODO: How to determine session end?
-        self._streamer.enqueue_message(messaging.CloseMessage())
         if self._logging_tee:
             self._logging_tee.close()
+        self._streamer.enqueue_message(messaging.CloseMessage())

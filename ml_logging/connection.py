@@ -1,6 +1,6 @@
-'''
+"""
 FAKE BACKEND FOR NOW ABSTRACTED AWAY WITH GCS
-'''
+"""
 
 import os
 import logging
@@ -33,50 +33,42 @@ class GCSBackend:
             LOGGER.info("Folder doest exist -> new experiment")
 
     def upload_asset(
-            self,
-            asset_path: str,
-            dest_name: t.Optional[str] = None
+        self, asset_path: str, dest_name: t.Optional[str] = None
     ) -> None:
         self._check_file_exists_locally(asset_path)
         destination_path = os.path.join(
             self._run_folder_name,
             "assets",
-            dest_name if dest_name else os.path.basename(asset_path)
+            dest_name if dest_name else os.path.basename(asset_path),
         )
         self._upload_from_filename(destination_path, asset_path)
         LOGGER.info(f"Asset {asset_path} uploaded")
 
     def upload_image(
-            self,
-            image_path: str,
-            dest_name: t.Optional[str] = None
+        self, image_path: str, dest_name: t.Optional[str] = None
     ) -> None:
         self._check_file_exists_locally(image_path)
         destination_name = os.path.join(
             self._run_folder_name,
             "images",
-            dest_name if dest_name else os.path.basename(image_path)
+            dest_name if dest_name else os.path.basename(image_path),
         )
         self._upload_from_filename(destination_name, image_path)
         LOGGER.info(f"Image {image_path} uploaded")
 
     def upload_hyper_parameter(self, key: str, value: t.Any) -> None:
         destination_name = os.path.join(
-            self._run_folder_name,
-            "hyperparameters",
-            f"{uuid.uuid4()}.txt"
+            self._run_folder_name, "hyperparameters", f"{uuid.uuid4()}.txt"
         )
         self._upload_from_string(destination_name, f"{key} {str(value)}")
         LOGGER.info("KV uploaded")
 
     def upload_text(self, text: str) -> None:
         destination_name = os.path.join(
-            self._run_folder_name,
-            "text",
-            f"{uuid.uuid4()}.txt"
+            self._run_folder_name, "text", f"{uuid.uuid4()}.txt"
         )
         self._upload_from_string(destination_name, text)
-        LOGGER.info(f"Text uploaded")
+        LOGGER.info("Text uploaded")
 
     def list_assets(self) -> t.List[str]:
         blobs = self._list_blobs(os.path.join(self._run_folder_name, "assets"))
@@ -103,9 +95,9 @@ class GCSBackend:
         pass
 
     def _does_run_level_folder_exist(self, folder_name: str) -> bool:
-        return storage.Blob(
-            name=folder_name, bucket=self._root_bucket
-        ).exists(self._storage_client)
+        return storage.Blob(name=folder_name, bucket=self._root_bucket).exists(
+            self._storage_client
+        )
 
     def _check_file_exists_locally(self, filename: str) -> None:
         if not os.path.exists(filename):
@@ -114,7 +106,7 @@ class GCSBackend:
             )
 
     def _upload_from_filename(
-            self, destination_path: str, filepath: str
+        self, destination_path: str, filepath: str
     ) -> None:
         blob = self._root_bucket.blob(destination_path)
         blob.upload_from_filename(filepath)

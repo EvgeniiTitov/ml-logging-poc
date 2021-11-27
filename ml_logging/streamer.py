@@ -1,7 +1,6 @@
 import logging
 import threading
 from queue import Queue
-import typing as t
 
 import ml_logging.messages as messaging
 from ml_logging.connection import GCSBackend
@@ -20,11 +19,12 @@ class Streamer(threading.Thread):
     the BaseRun object, depending on the object's nature, the appropriate
     backend handle or whatever is used to upload the item
     """
+
     MESSAGE_QUEUE_SIZE = 100
 
     def __init__(self, run_id: str, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self._message_queue: "Queue[messaging.BaseLogMessage]" = Queue(
+        self._message_queue: "Queue[messaging.BaseMessage]" = Queue(
             Streamer.MESSAGE_QUEUE_SIZE
         )
         self._backend = GCSBackend(run_id)

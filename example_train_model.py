@@ -1,5 +1,4 @@
 import pickle
-import time
 
 from sklearn import datasets, model_selection, ensemble
 
@@ -18,7 +17,7 @@ def main() -> int:
         train_data,
         test_data,
         train_lagels,
-        test_labels
+        test_labels,
     ) = model_selection.train_test_split(
         data.data, data.target, train_size=0.80
     )
@@ -39,11 +38,14 @@ def main() -> int:
     print("Model saved locally")
     ml_run.log_asset(model_save_path)
 
-    print("Sleeping")
-    time.sleep(10)
+    ml_run.log_image("retrowave.jpeg")
+    print("Image logged")
+
+    # TODO: Explicit vs implicit stop?
+    ml_run.complete_experiment()
 
     return 0
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -1,7 +1,10 @@
 import logging
+import typing as t
 
 import sys
 from queue import Queue
+
+from ml_logging.messages import LogTextMessage
 
 
 LOGGER = logging.getLogger(__name__)
@@ -18,16 +21,18 @@ class Tee:
         self._buffer_size = buffer_size
         self._stream = stream_queue
 
-        self._batch = []
+        self._batch: t.List[str] = []
         self.stdout = sys.stdout
-        sys.stdout = self
+        sys.stdout = self  # type: ignore
 
         self._closed = False
         LOGGER.info("Tee initialized")
 
     def _unload_batch(self) -> None:
         # TODO: Could block indefinitely, use .put_nowait() + while
-        self._stream.put(" ".join([str(e) for e in self._batch]))
+        self._stream.put(
+            LogTextMessage(" ".join([str(e) for e in self._batch]))
+        )
 
     def write(self, data) -> None:
         if len(self._batch) < self._buffer_size:
