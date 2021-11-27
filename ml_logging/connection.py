@@ -26,11 +26,17 @@ class GCSBackend:
         LOGGER.info("Storage client and root bucket initialized")
 
         self._run_folder_name = run_folder_name
-        folder_exists = self._does_run_level_folder_exist(run_folder_name)
-        if folder_exists:
+        self._folder_exists = self._does_run_level_folder_exist(
+            run_folder_name
+        )
+        if self._folder_exists:
             LOGGER.info("Folder exists -> connecting to running experiment")
         else:
             LOGGER.info("Folder doest exist -> new experiment")
+
+    @property
+    def run_exists(self):
+        return self._folder_exists
 
     def upload_asset(
         self, asset_path: str, dest_name: t.Optional[str] = None
@@ -78,23 +84,28 @@ class GCSBackend:
         blobs = self._list_blobs(os.path.join(self._run_folder_name, "images"))
         return [os.path.basename(blob) for blob in blobs]
 
-    def download_asset(self, asset_name: str, destination_path: str):
+    def download_asset(
+        self, asset_name: str, destination_path: str
+    ) -> t.Tuple[bool, t.Optional[str]]:
         full_asset_path = os.path.join(
             self._run_folder_name, "assets", asset_name
         )
-        self._download_locally(full_asset_path, destination_path)
+        return self._download_locally(full_asset_path, destination_path)
 
-    def download_image(self, image_name: str, destination_path: str) -> t.Any:
+    def download_image(
+        self, image_name: str, destination_path: str
+    ) -> t.Tuple[bool, t.Optional[str]]:
         full_image_path = os.path.join(
             self._run_folder_name, "images", image_name
         )
-        self._download_locally(full_image_path, destination_path)
+        return self._download_locally(full_image_path, destination_path)
 
     def download_hyper_parameters(self):
         # TODO: Download all files locally, open, concat contents. WTF!
         pass
 
     def _does_run_level_folder_exist(self, folder_name: str) -> bool:
+        # TODO: This needs to be redone - currently does detect existing runs
         return storage.Blob(name=folder_name, bucket=self._root_bucket).exists(
             self._storage_client
         )
@@ -121,7 +132,9 @@ class GCSBackend:
         )
         return [blob.name for blob in blobs]
 
-    def _download_locally(self, gcs_source: str, destination: str) -> None:
+    def _download_locally(
+        self, gcs_source: str, destination: str
+    ) -> t.Tuple[bool, t.Optional[str]]:
         try:
             blob = self._root_bucket.blob(gcs_source)
             blob.download_to_filename(destination)
@@ -129,4 +142,6 @@ class GCSBackend:
             LOGGER.exception(
                 f"Failed to download file {gcs_source}. Error: {e}"
             )
-            raise e
+            return False, str(e)
+        else:
+            return True, None

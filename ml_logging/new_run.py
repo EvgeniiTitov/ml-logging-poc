@@ -9,9 +9,10 @@ from ml_logging.utils import get_machine_details
 
 
 LOGGER = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 
-class BaseRun:
+class NewRun:
     def __init__(self, auto_logging: bool) -> None:
         self._run_id = self._generate_run_id()
         self._streamer: t.Optional[Streamer] = None

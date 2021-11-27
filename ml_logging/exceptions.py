@@ -1,0 +1,2 @@
+class RunDoesntExist(Exception):
+    pass
