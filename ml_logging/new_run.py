@@ -1,11 +1,13 @@
 import logging
 import typing as t
 import uuid
+import threading
 
 from ml_logging.streamer import Streamer
 import ml_logging.messages as messaging
 from ml_logging.tee import Tee
 from ml_logging.utils import get_machine_details
+from ml_logging.monitors import CPUMonitor, GPUMonitor
 
 
 LOGGER = logging.getLogger(__name__)
@@ -18,10 +20,15 @@ class NewRun:
         self._streamer: t.Optional[Streamer] = None
         self._start()
 
+        self._event = threading.Event()
         if auto_logging:
             self._logging_tee = Tee(self._streamer.queue)
+            self._cpu_monitor: threading.Thread = CPUMonitor(
+                self._event, self._streamer.queue, 2.0
+            )
         else:
             self._logging_tee = None
+            self._cpu_monitor = None
 
     @property
     def run_id(self) -> str:
@@ -84,6 +91,10 @@ class NewRun:
 
     def _end(self) -> None:
         # TODO: How to determine session end?
+        self._event.set()
         if self._logging_tee:
             self._logging_tee.close()
         self._streamer.enqueue_message(messaging.CloseMessage())
+        if self._cpu_monitor:
+            self._cpu_monitor.join()
+        self._streamer.join()

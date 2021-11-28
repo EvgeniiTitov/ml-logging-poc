@@ -57,5 +57,9 @@ class LogTextMessage(BaseLogMessage):
     pass
 
 
+class LogSystemInfoMessage(BaseLogMessage):
+    pass
+
+
 class LogWhateverMessage(BaseLogMessage):
     pass
